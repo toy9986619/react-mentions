@@ -487,9 +487,7 @@ class MentionsInput extends React.Component {
       return
     }
 
-    const value = (isComposing && this.OS === 'Linux')
-      ? ev.target.value || ''
-      : this.props.value || ''
+    const value = this.props.value || ''
     const config = readConfigFromChildren(this.props.children)
 
     let newPlainTextValue = ev.target.value
@@ -503,7 +501,8 @@ class MentionsInput extends React.Component {
         selectionEndBefore: this.state.selectionEnd,
         selectionEndAfter: ev.target.selectionEnd,
       },
-      config
+      config,
+      this.OS,
     )
 
     // In case a mention is deleted, also adjust the new plain text value

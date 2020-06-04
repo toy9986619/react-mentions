@@ -2,13 +2,21 @@ import mapPlainTextIndex from './mapPlainTextIndex'
 import getPlainText from './getPlainText'
 import spliceString from './spliceString'
 
+function findFirstDiffPos(a, b) {
+  var i = 0;
+  if (a === b) return -1;
+  while (a[i] === b[i]) i++;
+  return i;
+}
+
 // Applies a change from the plain text textarea to the underlying marked up value
 // guided by the textarea text selection ranges before and after the change
 const applyChangeToValue = (
   value,
   plainTextValue,
   { selectionStartBefore, selectionEndBefore, selectionEndAfter },
-  config
+  config,
+  OS,
 ) => {
   let oldPlainTextValue = getPlainText(value, config)
 
@@ -32,6 +40,26 @@ const applyChangeToValue = (
 
   // extract the insertion from the new plain text value
   let insert = plainTextValue.slice(selectionStartBefore, selectionEndAfter)
+
+  /**
+   * fix for Ubuntu(Linux) typing chinese
+   * because when typing chinese on ubuntu, selectionEndAfter will not increase, need to find the insert sub string
+   */
+  if (OS === 'Linux') {
+    const sub = plainTextValue.substring(selectionEndAfter);
+    const originSub = oldPlainTextValue.substring(selectionEndAfter);
+    const diffIndex = findFirstDiffPos(sub, originSub);
+    selectionStartBefore = selectionStartBefore + diffIndex;
+    const index = sub.lastIndexOf(originSub.substring(diffIndex));
+
+    if (index >= 0) {
+      insert = sub.slice(0, index);
+      selectionEndAfter = selectionEndAfter + insert.length;
+    } else {
+      insert = sub.slice(0, -index);
+      selectionEndAfter = selectionEndAfter + insert.length;
+    }
+  }
 
   // handling for Backspace key with no range selection
   let spliceStart = Math.min(selectionStartBefore, selectionEndAfter)
